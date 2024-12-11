@@ -1,0 +1,136 @@
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker.network=proxy"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--providers.file.directory=/config"
+      - "--providers.file.watch=true"
+      - "--log.level=DEBUG"
+    ports:
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/certs:ro
+      - ./certs/tls.yml:/config/tls.yml:ro
+    networks:
+      - proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.middlewares=auth,strip-api"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$pbj228ht$$W/rn9c7JMqR0zFO1hdohn1"  # Password: admin
+      # Middleware to strip path prefix for dashboard
+      - "traefik.http.middlewares.strip-api.stripprefix.prefixes=/dashboard"
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    environment:
+      - JENKINS_OPTS="--prefix=/jenkins"
+      - DOCKER_HOST=tcp://docker:2375
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins-docker-certs:/certs/client:ro
+    networks:
+      - proxy
+      - jenkins
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jenkins.rule=PathPrefix(`/jenkins`)"
+      - "traefik.http.routers.jenkins.entrypoints=websecure"
+      - "traefik.http.routers.jenkins.tls=true"
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+
+  docker:
+    image: docker:dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: "/certs"
+    volumes:
+      - jenkins-docker-certs:/certs/client
+      - jenkins-docker-data:/var/lib/docker
+    networks:
+      - jenkins
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+
+  sonarqube:
+    image: sonarqube:lts
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+      - SONAR_WEB_CONTEXT=/sonarqube
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - proxy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarqube.rule=PathPrefix(`/sonarqube`)"
+      - "traefik.http.routers.sonarqube.entrypoints=websecure"
+      - "traefik.http.routers.sonarqube.tls=true"
+      - "traefik.http.services.sonarqube.loadbalancer.server.port=9000"
+
+  bagetter:
+    image: bagetter/bagetter:latest
+    networks:
+      - proxy
+    volumes:
+      - ./appsettings.json:/app/appsettings.json:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bagetter.rule=PathPrefix(`/bagetter`)"
+      - "traefik.http.routers.bagetter.entrypoints=websecure"
+      - "traefik.http.routers.bagetter.tls=true"
+      - "traefik.http.services.bagetter.loadbalancer.server.port=8080"
+      - "traefik.http.routers.bagetter.middlewares=strip-bagetter"
+      - "traefik.http.middlewares.strip-bagetter.stripprefix.prefixes=/bagetter"
+
+networks:
+  proxy:
+    driver: bridge
+  jenkins:
+    driver: bridge
+
+volumes:
+  jenkins_home:
+  jenkins-docker-certs:
+  jenkins-docker-data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

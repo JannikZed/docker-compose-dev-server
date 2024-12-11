@@ -1,0 +1,22 @@
+api:
+  dashboard: true
+  insecure: false
+
+entryPoints:
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: default
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: proxy
+
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/server.crt
+        keyFile: /certs/server.key

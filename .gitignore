@@ -1,0 +1,18 @@
+# Certificates
+certs/*.key
+certs/*.crt
+certs/*.pem
+certs/*.srl
+
+# Docker volumes
+data/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
