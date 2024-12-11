@@ -117,8 +117,6 @@ services:
       - "traefik.http.routers.bagetter.entrypoints=websecure"
       - "traefik.http.routers.bagetter.tls=true"
       - "traefik.http.services.bagetter.loadbalancer.server.port=8080"
-      - "traefik.http.routers.bagetter.middlewares=strip-bagetter"
-      - "traefik.http.middlewares.strip-bagetter.stripprefix.prefixes=/bagetter"
 
 networks:
   proxy:
