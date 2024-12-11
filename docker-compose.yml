@@ -2,15 +2,6 @@ services:
   traefik:
     image: traefik:v2.10
     command:
-      - "--api.insecure=false"
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--entrypoints.websecure.address=:443"
-      - "--providers.docker.network=proxy"
-      - "--entrypoints.websecure.http.tls=true"
-      - "--providers.file.directory=/config"
-      - "--providers.file.watch=true"
       - "--log.level=DEBUG"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
