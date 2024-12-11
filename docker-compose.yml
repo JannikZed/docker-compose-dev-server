@@ -1,12 +1,12 @@
 services:
   traefik:
     image: traefik:v2.10
-    command:
-      - "--log.level=DEBUG"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/certs:ro
+      # this is the dynamic configuration. TLS certs can be replaced without restarting
       - ./certs/tls.yml:/config/tls.yml:ro
+      # this is the static configuration. Main config
       - ./traefik.yml:/etc/traefik/traefik.yml:ro
     ports:
       - "443:443"
@@ -19,9 +19,9 @@ services:
           memory: 512M
     labels:
       - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
       - "traefik.http.routers.dashboard.service=api@internal"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.middlewares=auth"
       - "traefik.http.routers.dashboard.tls=true"
       - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$pbj228ht$$W/rn9c7JMqR0zFO1hdohn1"  # Password: admin
@@ -90,6 +90,7 @@ services:
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_extensions:/opt/sonarqube/extensions
+      # TBD: do we really need logs as a volume? Why not logs just stdout?
       - sonarqube_logs:/opt/sonarqube/logs
     networks:
       - proxy

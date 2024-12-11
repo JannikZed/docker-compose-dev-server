@@ -1,8 +1,8 @@
 # Certificates
-certs/*.key
-certs/*.crt
-certs/*.pem
-certs/*.srl
+# certs/*.key
+# certs/*.crt
+# certs/*.pem
+# certs/*.srl
 
 # Docker volumes
 data/
