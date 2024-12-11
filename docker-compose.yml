@@ -12,12 +12,13 @@ services:
       - "--providers.file.directory=/config"
       - "--providers.file.watch=true"
       - "--log.level=DEBUG"
-    ports:
-      - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/certs:ro
       - ./certs/tls.yml:/config/tls.yml:ro
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+    ports:
+      - "443:443"
     networks:
       - proxy
     deploy:
@@ -27,14 +28,12 @@ services:
           memory: 512M
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.tls=true"
-      - "traefik.http.routers.api.service=api@internal"
-      - "traefik.http.routers.api.middlewares=auth,strip-api"
+      - "traefik.http.routers.dashboard.rule=PathPrefix(`/api`) || PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.middlewares=auth"
       - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$pbj228ht$$W/rn9c7JMqR0zFO1hdohn1"  # Password: admin
-      # Middleware to strip path prefix for dashboard
-      - "traefik.http.middlewares.strip-api.stripprefix.prefixes=/dashboard"
+      - "traefik.http.routers.dashboard.tls=true"
 
   jenkins:
     image: jenkins/jenkins:lts
