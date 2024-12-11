@@ -38,7 +38,7 @@ services:
   jenkins:
     image: jenkins/jenkins:lts
     environment:
-      - JENKINS_OPTS="--prefix=/jenkins"
+      - JENKINS_OPTS=--prefix=/jenkins
       - DOCKER_HOST=tcp://docker:2375
       - DOCKER_CERT_PATH=/certs/client
       - DOCKER_TLS_VERIFY=1
