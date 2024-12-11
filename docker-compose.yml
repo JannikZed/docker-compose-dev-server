@@ -23,8 +23,10 @@ services:
       - "traefik.http.routers.dashboard.service=api@internal"
       - "traefik.http.routers.dashboard.entrypoints=websecure"
       - "traefik.http.routers.dashboard.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$pbj228ht$$W/rn9c7JMqR0zFO1hdohn1"  # Password: admin
       - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$pbj228ht$$W/rn9c7JMqR0zFO1hdohn1"  # Password: admin
+
+
 
   jenkins:
     image: jenkins/jenkins:lts
@@ -51,6 +53,12 @@ services:
       - "traefik.http.routers.jenkins.entrypoints=websecure"
       - "traefik.http.routers.jenkins.tls=true"
       - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/jenkins/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   docker:
     image: docker:dind
@@ -67,6 +75,12 @@ services:
         limits:
           cpus: '2.0'
           memory: 4G
+    healthcheck:
+      test: ["CMD", "docker", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   sonarqube:
     image: sonarqube:lts
@@ -90,6 +104,12 @@ services:
       - "traefik.http.routers.sonarqube.entrypoints=websecure"
       - "traefik.http.routers.sonarqube.tls=true"
       - "traefik.http.services.sonarqube.loadbalancer.server.port=9000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--output-document=/dev/null", "http://localhost:9000/sonarqube/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   bagetter:
     image: bagetter/bagetter:latest
@@ -108,6 +128,12 @@ services:
       - "traefik.http.routers.bagetter.entrypoints=websecure"
       - "traefik.http.routers.bagetter.tls=true"
       - "traefik.http.services.bagetter.loadbalancer.server.port=8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8080/bagetter/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 networks:
   proxy:
